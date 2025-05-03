@@ -14,7 +14,7 @@
           background: #f8f9fa;
           border: 1px solid #dee2e6;
           border-radius: 8px;
-          display: none; /* скрыто по умолчанию */
+          display: none;
         }
     </style>
 </head>
@@ -34,11 +34,11 @@
 <div class="container mt-4">
     <h1>Каталог радиодеталей</h1>
     <div id="parts-list" class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-        <!-- JS вставит карточки деталей сюда -->
+        <!-- JS вставит карточки сюда -->
     </div>
 </div>
 
-<!-- Order summary widget -->
+<!-- Order summary -->
 <div class="order-summary" id="order-summary">
     <h5>Текущий заказ</h5>
     <p id="items-count">Позиции: 0</p>
@@ -51,6 +51,8 @@
 </footer>
 
 <script>
+    const BASE_API = 'http://127.0.0.1:8000';
+    const API_URL = `${BASE_API}/api`;
     const savedOrderId = localStorage.getItem('currentOrderId');
     const orderSummary = document.getElementById('order-summary');
 
@@ -68,40 +70,47 @@
     }
 
     async function fetchParts() {
-      const response = await fetch('/parts');
+      const response = await fetch(`${API_URL}/parts/`, {
+        credentials: 'include'
+      });
       const data = await response.json();
       const list = document.getElementById('parts-list');
       list.innerHTML = '';
 
       data.items.forEach(part => {
-        const card = document.createElement('div');
-        card.className = 'col';
-        card.innerHTML = `
-          <div class="card h-100">
-            <div class="card-body">
-              <h5 class="card-title">${part.name}</h5>
-              <p class="card-text">Категория: ${part.category_name}</p>
-              <p class="card-text">Напряжение: ${part.voltage} В</p>
-              <p class="card-text">Мощность: ${part.power} Вт</p>
-              ${part.datasheet_url ? `<a href="${part.datasheet_url}" target="_blank">Документация</a><br>` : ''}
-              ${part.schematic_url ? `<a href="${part.schematic_url}" target="_blank">Схема</a>` : ''}
-              <button class="btn btn-sm btn-success mt-3" onclick="addToOrder(${part.id})">Добавить в заказ</button>
-            </div>
-          </div>`;
-        list.appendChild(card);
-      });
+          const card = document.createElement('div');
+          card.className = 'col';
+
+          const schematicImg = part.schematic_url
+            ? `<img src="${BASE_API}${part.schematic_url}" alt="Схема" class="img-fluid my-2">`
+            : '';
+
+          card.innerHTML = `
+            <div class="card h-100">
+              <div class="card-body">
+                <h5 class="card-title">${part.name}</h5>
+                <p class="card-text">Категория: ${part.category_name}</p>
+                <p class="card-text">Напряжение: ${part.voltage} В</p>
+                <p class="card-text">Мощность: ${part.power} Вт</p>
+                ${part.datasheet_url ? `<a href="${BASE_API}${part.datasheet_url}" target="_blank">Документация</a><br>` : ''}
+                ${schematicImg}
+                <button class="btn btn-sm btn-success mt-3" onclick="addToOrder(${part.id})">Добавить в заказ</button>
+              </div>
+            </div>`;
+
+          list.appendChild(card);
+        });
     }
 
     async function addToOrder(partId) {
-      const response = await fetch('/orders', {
+      const response = await fetch(`${API_URL}/orders/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ part_id: partId, user_id: 456 })
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ part_id: partId })
       });
-      const order = await response.json();
 
+      const order = await response.json();
       window.currentOrderId = order.id;
       localStorage.setItem('currentOrderId', order.id);
 
@@ -110,12 +119,15 @@
     }
 
     async function updateOrderQuantity(orderId) {
-      const response = await fetch(`/orders/${orderId}/items-quantity`);
+      const response = await fetch(`${API_URL}/orders/${orderId}/positions-quantity/`, {
+        credentials: 'include'
+      });
       const data = await response.json();
-      document.getElementById('items-count').innerText = `Позиции: ${data.items_quantity}`;
+      document.getElementById('items-count').innerText = `Позиции: ${data.positions_quantity}`;
     }
 
     fetchParts();
 </script>
+
 </body>
 </html>
