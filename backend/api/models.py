@@ -7,8 +7,8 @@ User = get_user_model()
 
 class OrderStatus(models.TextChoices):
     CREATED = 'CREATED'
-    PAID = 'PAID'
-    SHIPPED = 'SHIPPED'
+    COMPLETED = 'COMPLETED'
+    FAILED = 'FAILED'
     CANCELLED = 'CANCELLED'
 
 
@@ -26,7 +26,7 @@ class Order(models.Model):
         return f"Order #{self.id} by {self.user.username}"
 
 
-class PartCategory:
+class PartCategory(models.Model):
     name = models.CharField(max_length=255)
 
     def __str__(self):

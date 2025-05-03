@@ -1,7 +1,22 @@
 from django.urls import path
-
-from .views import hello_world
+from .views import (
+    get_parts,
+    get_part_detail,
+    get_categories,
+    create_order,
+    get_order_positions_quantity,
+    get_order_detail,
+    add_item_to_order,
+    complete_order,
+)
 
 urlpatterns = [
-    path('parts/', hello_world, name='part-list'),
+    path('parts/', get_parts, name='part-list'),
+    path('parts/<int:part_id>/', get_part_detail, name='part-detail'),
+    path('categories/', get_categories, name='category-list'),
+    path('orders/', create_order, name='order-create'),
+    path('orders/<int:order_id>/', get_order_detail, name='order-detail'),
+    path('orders/<int:order_id>/positions-quantity/', get_order_positions_quantity, name='order-positions-quantity'),
+    path('orders/<int:order_id>/add-item/', add_item_to_order, name='order-add-item'),
+    path('orders/<int:order_id>/complete/', complete_order, name='order-complete'),
 ]
