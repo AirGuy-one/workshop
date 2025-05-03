@@ -16,7 +16,11 @@ ADMIN_USER = User.objects.get(username='admin')
 
 @api_view(['GET'])
 def get_parts(request):
+    category = request.GET.get('category')
     parts = Part.objects.all()
+    if category:
+        parts = parts.filter(category__name__iexact=category)
+
     items = []
     for part in parts:
         items.append({
@@ -30,6 +34,21 @@ def get_parts(request):
             'created_at': part.created_at.isoformat()
         })
     return Response({'items': items}, status=HTTP_200_OK)
+
+
+@api_view(['GET'])
+def get_part_detail(request, part_id):
+    part = get_object_or_404(Part, id=part_id)
+    data = {
+        'name': part.name,
+        'category_name': part.category.name,
+        'voltage': part.voltage,
+        'power': part.power,
+        'datasheet_url': part.datasheet_file.url if part.datasheet_file else None,
+        'schematic_url': part.schematic.url if part.schematic else None,
+        'created_at': part.created_at.isoformat()
+    }
+    return Response(data, status=HTTP_200_OK)
 
 
 @api_view(['GET'])

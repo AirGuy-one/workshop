@@ -4,6 +4,7 @@ from .views import (
     get_parts,
     get_categories,
     create_order,
+    get_part_detail,
     get_order_positions_quantity,
     get_order_detail,
     add_item_to_order,
@@ -13,6 +14,7 @@ from .views import (
 
 urlpatterns = [
     path('parts/', get_parts, name='part-list'),
+    path('parts/<int:part_id>/', get_part_detail, name='part-detail'),
     path('categories/', get_categories, name='category-list'),
     path('orders/', create_order, name='order-create'),
     path('orders/<int:order_id>/', get_order_detail, name='order-detail'),
