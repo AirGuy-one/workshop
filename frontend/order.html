@@ -49,6 +49,8 @@
 </footer>
 
 <script>
+    const BASE_API = 'http://127.0.0.1:8000';
+    const API_URL = `${BASE_API}/api`;
     const orderId = localStorage.getItem('currentOrderId');
     const itemsList = document.getElementById('order-items');
     const completeBtn = document.getElementById('complete-btn');
@@ -62,7 +64,7 @@
     }
 
     async function fetchOrder() {
-      const res = await fetch(`/orders/${orderId}`);
+      const res = await fetch(`${API_URL}/orders/${orderId}`);
       const data = await res.json();
 
       itemsList.innerHTML = '';
@@ -74,7 +76,9 @@
       }
 
       for (const item of data.items) {
-        const part = await fetch(`/parts/${item.part_id}`).then(r => r.json());
+        const partRes = await fetch(`${API_URL}/parts/${item.part_id}`);
+        const part = await partRes.json();
+
         const li = document.createElement('li');
         li.className = 'list-group-item';
         li.innerHTML = `<strong>${part.name}</strong> — ${item.quantity} шт.`;
@@ -83,11 +87,19 @@
     }
 
     async function completeOrder() {
-      const res = await fetch(`/orders/${orderId}/complete`, { method: 'POST' });
+      const res = await fetch(`${API_URL}/orders/${orderId}/complete/`, {
+        method: 'POST'
+      });
+
       if (res.status === 204) {
-        completeBtn.disabled = true;
-        completeStatus.innerHTML = '<span class="success-badge">Заказ успешно оформлен!</span>';
+        completeBtn.remove();  // Удаляем кнопку
+        const successMsg = document.createElement('div');
+        successMsg.className = 'alert alert-success';
+        successMsg.textContent = 'Всё оформлено! Заказ завершён.';
+        completeStatus.replaceWith(successMsg);  // Показываем сообщение
         localStorage.removeItem('currentOrderId');
+      } else {
+        completeStatus.innerHTML = '<span class="text-danger">Ошибка при оформлении заказа</span>';
       }
     }
 </script>
