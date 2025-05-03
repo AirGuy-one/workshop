@@ -33,21 +33,6 @@ def get_parts(request):
 
 
 @api_view(['GET'])
-def get_part_detail(request, part_id):
-    part = get_object_or_404(Part, id=part_id)
-    data = {
-        'name': part.name,
-        'category_name': part.category.name,
-        'voltage': part.voltage,
-        'power': part.power,
-        'datasheet_url': part.datasheet_file.url if part.datasheet_file else None,
-        'schematic_url': part.schematic.url if part.schematic else None,
-        'created_at': part.created_at.isoformat()
-    }
-    return Response(data, status=HTTP_200_OK)
-
-
-@api_view(['GET'])
 def get_categories(request):
     categories = PartCategory.objects.all()
     result = [{'id': c.id, 'name': c.name} for c in categories]
@@ -109,3 +94,22 @@ def complete_order(request, order_id):
     order.status = OrderStatus.COMPLETED
     order.save()
     return Response(status=HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET'])
+def get_order_history(request):
+    orders = Order.objects.filter(user=ADMIN_USER, status=OrderStatus.COMPLETED).order_by('-created_at')
+    result = []
+
+    for order in orders:
+        items = [
+            {'part_id': item.part_id, 'quantity': item.quantity}
+            for item in order.items.all()
+        ]
+        result.append({
+            'id': order.id,
+            'created_at': order.created_at.isoformat(),
+            'items': items
+        })
+
+    return Response({'orders': result}, status=HTTP_200_OK)

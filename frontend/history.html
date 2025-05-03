@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>История заказов</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .history-box {
+            max-width: 800px;
+            margin: 0 auto;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">РадиоМаркет</a>
+        <div class="d-flex">
+            <a href="history.html" class="btn btn-outline-light">История заказов</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Order History -->
+<div class="history-box">
+    <h2 class="mb-4">История заказов</h2>
+    <div id="orders-container" class="accordion"></div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-dark text-white text-center py-3 mt-5">
+    <small>© 2025 РадиоМаркет. Все права защищены.</small>
+</footer>
+
+<script>
+    const BASE_API = 'http://127.0.0.1:8000';
+    const API_URL = `${BASE_API}/api`;
+
+    async function fetchOrderHistory() {
+        const response = await fetch(`${API_URL}/orders/history/`);
+        const data = await response.json();
+
+        const container = document.getElementById('orders-container');
+        container.innerHTML = '';
+
+        if (data.orders.length === 0) {
+            container.innerHTML = '<p class="text-muted">У вас пока нет завершённых заказов.</p>';
+            return;
+        }
+
+        for (let i = 0; i < data.orders.length; i++) {
+            const order = data.orders[i];
+            const card = document.createElement('div');
+            card.className = 'accordion-item';
+            card.innerHTML = `
+                <h2 class="accordion-header" id="heading-${order.id}">
+                    <button class="accordion-button ${i > 0 ? 'collapsed' : ''}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${order.id}">
+                        Заказ #${order.id} от ${new Date(order.created_at).toLocaleString()}
+                    </button>
+                </h2>
+                <div id="collapse-${order.id}" class="accordion-collapse collapse ${i === 0 ? 'show' : ''}" data-bs-parent="#orders-container">
+                    <div class="accordion-body" id="order-body-${order.id}">
+                        <p>Загружается...</p>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+
+            const bodyEl = document.getElementById(`order-body-${order.id}`);
+            let bodyHtml = '<ul class="list-group mb-2">';
+            for (const item of order.items) {
+                const part = await fetch(`${API_URL}/parts/${item.part_id}`).then(r => r.json());
+                bodyHtml += `<li class="list-group-item"><strong>${part.name}</strong> — ${item.quantity} шт.</li>`;
+            }
+            bodyHtml += '</ul>';
+            bodyEl.innerHTML = bodyHtml;
+        }
+    }
+
+    fetchOrderHistory();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
