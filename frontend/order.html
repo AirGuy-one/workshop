@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Текущий заказ</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .order-box {
+          max-width: 800px;
+          margin: 0 auto;
+          margin-top: 40px;
+        }
+        .success-badge {
+          color: green;
+          font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">РадиоМаркет</a>
+        <div class="d-flex">
+            <a href="#" class="btn btn-outline-light">История заказов</a>
+        </div>
+    </div>
+</nav>
+
+<!-- Order Detail -->
+<div class="order-box">
+    <h2 class="mb-4">Ваш заказ</h2>
+
+    <ul id="order-items" class="list-group mb-3">
+        <!-- JS вставит сюда позиции -->
+    </ul>
+
+    <div class="d-grid gap-2">
+        <button id="complete-btn" class="btn btn-success" onclick="completeOrder()">Оформить заказ</button>
+        <p id="complete-status" class="mt-2"></p>
+        <a href="index.html" class="btn btn-outline-secondary">← Вернуться в каталог</a>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-dark text-white text-center py-3 mt-5">
+    <small>© 2025 РадиоМаркет. Все права защищены.</small>
+</footer>
+
+<script>
+    const orderId = localStorage.getItem('currentOrderId');
+    const itemsList = document.getElementById('order-items');
+    const completeBtn = document.getElementById('complete-btn');
+    const completeStatus = document.getElementById('complete-status');
+
+    if (!orderId) {
+      itemsList.innerHTML = '<li class="list-group-item text-danger">Ошибка: Заказ не найден.</li>';
+      completeBtn.disabled = true;
+    } else {
+      fetchOrder();
+    }
+
+    async function fetchOrder() {
+      const res = await fetch(`/orders/${orderId}`);
+      const data = await res.json();
+
+      itemsList.innerHTML = '';
+
+      if (!data.items.length) {
+        itemsList.innerHTML = '<li class="list-group-item">Заказ пуст</li>';
+        completeBtn.disabled = true;
+        return;
+      }
+
+      for (const item of data.items) {
+        const part = await fetch(`/parts/${item.part_id}`).then(r => r.json());
+        const li = document.createElement('li');
+        li.className = 'list-group-item';
+        li.innerHTML = `<strong>${part.name}</strong> — ${item.quantity} шт.`;
+        itemsList.appendChild(li);
+      }
+    }
+
+    async function completeOrder() {
+      const res = await fetch(`/orders/${orderId}/complete`, { method: 'POST' });
+      if (res.status === 204) {
+        completeBtn.disabled = true;
+        completeStatus.innerHTML = '<span class="success-badge">Заказ успешно оформлен!</span>';
+        localStorage.removeItem('currentOrderId');
+      }
+    }
+</script>
+</body>
+</html>
