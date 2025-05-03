@@ -1,3 +1,4 @@
+from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view
@@ -8,6 +9,9 @@ from rest_framework.status import (
 
 from .models import Part, PartCategory, Order, OrderItem, OrderStatus
 from .serializers import CreateOrderSerializer, AddItemSerializer
+
+User = get_user_model()
+ADMIN_USER = User.objects.get(username='admin')
 
 
 @api_view(['GET'])
@@ -56,25 +60,22 @@ def create_order(request):
     serializer = CreateOrderSerializer(data=request.data)
     if serializer.is_valid():
         part_id = serializer.validated_data['part_id']
-        user = request.user
-
-        order = Order.objects.create(user=user)
+        order = Order.objects.create(user=ADMIN_USER)
         OrderItem.objects.create(order=order, part_id=part_id, quantity=1)
         return Response({'id': order.id}, status=HTTP_201_CREATED)
-
     return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
 def get_order_positions_quantity(request, order_id):
-    order = get_object_or_404(Order, id=order_id, user=request.user)
+    order = get_object_or_404(Order, id=order_id, user=ADMIN_USER)
     quantity = sum(item.quantity for item in order.items.all())
     return Response({'positions_quantity': quantity}, status=HTTP_200_OK)
 
 
 @api_view(['GET'])
 def get_order_detail(request, order_id):
-    order = get_object_or_404(Order, id=order_id, user=request.user)
+    order = get_object_or_404(Order, id=order_id, user=ADMIN_USER)
     items = [{'part_id': item.part_id, 'quantity': item.quantity} for item in order.items.all()]
     return Response({
         'created_at': order.created_at.isoformat(),
@@ -89,7 +90,7 @@ def add_item_to_order(request, order_id):
     serializer = AddItemSerializer(data=request.data)
     if serializer.is_valid():
         part_id = serializer.validated_data['part_id']
-        order = get_object_or_404(Order, id=order_id, user=request.user)
+        order = get_object_or_404(Order, id=order_id, user=ADMIN_USER)
 
         item, created = OrderItem.objects.get_or_create(
             order=order, part_id=part_id, defaults={'quantity': 1}
@@ -99,13 +100,12 @@ def add_item_to_order(request, order_id):
             item.save()
 
         return Response({'message': 'Item added'}, status=HTTP_201_CREATED)
-
     return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
 def complete_order(request, order_id):
-    order = get_object_or_404(Order, id=order_id, user=request.user)
+    order = get_object_or_404(Order, id=order_id, user=ADMIN_USER)
     order.status = OrderStatus.COMPLETED
     order.save()
     return Response(status=HTTP_204_NO_CONTENT)

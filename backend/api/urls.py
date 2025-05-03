@@ -1,4 +1,5 @@
 from django.urls import path
+
 from .views import (
     get_parts,
     get_part_detail,

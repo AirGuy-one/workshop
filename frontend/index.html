@@ -103,20 +103,44 @@
     }
 
     async function addToOrder(partId) {
-      const response = await fetch(`${API_URL}/orders/`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ part_id: partId })
-      });
+      const existingOrderId = localStorage.getItem('currentOrderId');
 
-      const order = await response.json();
-      window.currentOrderId = order.id;
-      localStorage.setItem('currentOrderId', order.id);
+      if (!existingOrderId) {
+        // Первый клик: создаём заказ
+        const response = await fetch(`${API_URL}/orders/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ part_id: partId })
+        });
 
-      orderSummary.style.display = 'block';
-      updateOrderQuantity(order.id);
+        if (response.ok) {
+          const order = await response.json();
+          window.currentOrderId = order.id;
+          localStorage.setItem('currentOrderId', order.id);
+          document.getElementById('order-summary').style.display = 'block';
+          updateOrderQuantity(order.id);
+        } else {
+          console.error('Ошибка при создании заказа');
+        }
+
+      } else {
+        // Есть заказ: добавляем позицию
+        const response = await fetch(`${API_URL}/orders/${existingOrderId}/add-item/`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ part_id: partId })
+        });
+
+        if (response.ok) {
+          updateOrderQuantity(existingOrderId);
+        } else {
+          console.error('Ошибка при добавлении товара');
+        }
+      }
     }
+
 
     async function updateOrderQuantity(orderId) {
       const response = await fetch(`${API_URL}/orders/${orderId}/positions-quantity/`, {
